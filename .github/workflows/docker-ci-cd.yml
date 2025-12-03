@@ -9,38 +9,32 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up QEMU (for multi-platform build)
-        uses: docker/setup-qemu-action@v2
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Build Docker image
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          file: Dockerfile
-          push: false
-          tags: web_api_image:ci
+      - name: Build Docker image (tag: myapi)
+        run: |
+          docker build -t myapi:latest .
 
-      - name: List images
+      - name: List images (debug)
         run: docker images
 
-      - name: Run container
+      - name: Run API container
         run: |
-          docker run -d --name ci_test_container -p 8000:8000 web_api_image:ci
+          docker run -d --name ci_container -p 8000:8000 myapi:latest
           sleep 3
 
-      - name: Test API root endpoint
+      - name: Test root endpoint
         run: |
           curl -s http://localhost:8000/ | grep "FastAPI is running inside Docker"
 
-      - name: Cleanup container
+      - name: Clean up
         if: always()
         run: |
-          docker stop ci_test_container || true
-          docker rm ci_test_container || true
+          docker stop ci_container || true
+          docker rm ci_container || true
