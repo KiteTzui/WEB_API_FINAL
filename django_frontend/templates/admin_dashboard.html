@@ -1,6 +1,6 @@
 ﻿{% extends "base.html" %}
 
-{% block body_class %}admin-no-scroll{% endblock %}
+{% block body_class %}{% endblock %}
 {% load static %}
 
 {% block title %}Admin Dashboard{% endblock %}
@@ -8,32 +8,28 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/admin.css' %}">
 
-<div class="admin-wrapper">
+<div class="admin-wrapper" style="display: flex; min-height: calc(100vh - 72px);">
   <!-- Sidebar -->
-  <div class="admin-sidebar">
-    <div class="sidebar-header">Admin</div>
-    <nav class="sidebar-nav">
-      <a href="{% url 'admin_dashboard' %}" class="nav-item active">
+  <div class="admin-sidebar" style="width: 250px; background-color: #1a1a1a; color: white; padding: 20px 0; overflow-y: auto; flex-shrink: 0;">
+    <div class="sidebar-header" style="padding: 0 20px 20px; font-size: 18px; font-weight: 700; border-bottom: 1px solid #333;">Admin</div>
+    <nav class="sidebar-nav" style="display: flex; flex-direction: column;">
+      <a href="{% url 'admin_dashboard' %}" class="nav-item active" style="padding: 12px 20px; color: white; text-decoration: none; display: flex; align-items: center; gap: 10px; border-left: 3px solid #2563eb;">
         <span class="nav-icon">📊</span>
         <span>Dashboard</span>
       </a>
-      <a href="{% url 'admin_rooms' %}" class="nav-item">
+      <a href="{% url 'admin_rooms' %}" class="nav-item" style="padding: 12px 20px; color: #aaa; text-decoration: none; display: flex; align-items: center; gap: 10px; border-left: 3px solid transparent;">
         <span class="nav-icon">🛏️</span>
         <span>Rooms</span>
       </a>
-      <a href="{% url 'admin_bookings' %}" class="nav-item">
+      <a href="{% url 'admin_bookings' %}" class="nav-item" style="padding: 12px 20px; color: #aaa; text-decoration: none; display: flex; align-items: center; gap: 10px; border-left: 3px solid transparent;">
         <span class="nav-icon">📅</span>
         <span>Bookings</span>
       </a>
-      <a href="#" class="nav-item">
+      <a href="{% url 'admin_users' %}" class="nav-item" style="padding: 12px 20px; color: #aaa; text-decoration: none; display: flex; align-items: center; gap: 10px; border-left: 3px solid transparent;">
         <span class="nav-icon">👥</span>
         <span>Users</span>
       </a>
-      <a href="#" class="nav-item">
-        <span class="nav-icon">📈</span>
-        <span>Analytics</span>
-      </a>
-      <a href="#" class="nav-item">
+      <a href="{% url 'admin_settings' %}" class="nav-item" style="padding: 12px 20px; color: #aaa; text-decoration: none; display: flex; align-items: center; gap: 10px; border-left: 3px solid transparent;">
         <span class="nav-icon">⚙️</span>
         <span>Settings</span>
       </a>
@@ -41,7 +37,16 @@
   </div>
 
   <!-- Main Content -->
-  <div class="admin-main">
+  <div class="admin-main" style="flex: 1; overflow-y: auto; background-color: #f6f7fb; padding: 32px;">
+    {% if pending_bookings > 0 %}
+    <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 16px; border-radius: 4px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <strong style="color: #856404;">🔔 New Booking Alerts!</strong>
+        <p style="color: #856404; margin: 8px 0 0 0; font-size: 14px;">You have <strong>{{ pending_bookings }}</strong> new pending booking(s) waiting for your review.</p>
+      </div>
+      <a href="{% url 'admin_bookings' %}" style="background: #ffc107; color: #000; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-weight: 500;">Review Now</a>
+    </div>
+    {% endif %}
     <div class="dashboard-header">
       <div>
         <h1>Dashboard Overview</h1>
@@ -89,55 +94,64 @@
     </div>
 
     <!-- Charts Row -->
-    <div class="charts-row">
-      <div class="chart-card">
-        <h4>Monthly Bookings</h4>
-        <canvas id="monthlyChart" style="height:160px;"></canvas>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
+      <div style="background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <h4 style="margin: 0 0 20px 0; font-size: 16px; font-weight: 600; color: #1a2332;">Monthly Bookings</h4>
+        <div style="position: relative; height: 200px;">
+          <canvas id="monthlyChart"></canvas>
+        </div>
       </div>
 
-      <div class="chart-card">
-        <h4>Revenue Trend</h4>
-        <canvas id="revenueChart" style="height:160px;"></canvas>
+      <div style="background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <h4 style="margin: 0 0 20px 0; font-size: 16px; font-weight: 600; color: #1a2332;">Revenue Trend</h4>
+        <div style="position: relative; height: 200px;">
+          <canvas id="revenueChart"></canvas>
+        </div>
       </div>
     </div>
 
     <!-- Recent Bookings Table -->
-    <div class="table-card">
-      <div class="table-header">
-        <h4>Recent Bookings</h4>
-        <a href="{% url 'admin_bookings' %}" class="view-all-link">View All →</a>
+    <div style="background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h4 style="margin: 0; font-size: 18px; font-weight: 600; color: #1a2332;">Recent Bookings</h4>
+        <a href="{% url 'admin_bookings' %}" style="color: #2563eb; text-decoration: none; font-size: 14px; font-weight: 500;">View All →</a>
       </div>
-      <div class="table-scroll">
-        <table class="bookings-table">
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
           <thead>
-            <tr>
-              <th>ID</th>
-              <th>Guest</th>
-              <th>Room</th>
-              <th>Check-in</th>
-              <th>Amount</th>
-              <th>Status</th>
+            <tr style="border-bottom: 2px solid #e5e7eb; background-color: #f9fafb;">
+              <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">Booking ID</th>
+              <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">Guest Name</th>
+              <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">Room</th>
+              <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">Check-in</th>
+              <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">Amount</th>
+              <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">Status</th>
             </tr>
           </thead>
           <tbody>
-            {% for booking in recent_bookings|slice:":4" %}
-            <tr>
-              <td>#{{ booking.id }}</td>
-              <td>{{ booking.guest_name }}</td>
-              <td>{{ booking.room }}</td>
-              <td>{{ booking.checkin }}</td>
-              <td>${{ booking.total }}</td>
-              <td>
+            {% for booking in recent_bookings %}
+            <tr style="border-bottom: 1px solid #e5e7eb; hover: background-color: #f9fafb;">
+              <td style="padding: 12px; color: #374151;">#{{ booking.id }}</td>
+              <td style="padding: 12px; color: #374151; font-weight: 500;">{{ booking.guest_name }}</td>
+              <td style="padding: 12px; color: #374151;">{{ booking.room }}</td>
+              <td style="padding: 12px; color: #374151;">{{ booking.checkin }}</td>
+              <td style="padding: 12px; color: #1a2332; font-weight: 600;">${{ booking.total|floatformat:2 }}</td>
+              <td style="padding: 12px;">
                 {% if booking.status == "Confirmed" %}
-                  <span class="status-badge confirmed">Confirmed</span>
+                  <span style="background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Confirmed</span>
                 {% elif booking.status == "Pending" %}
-                  <span class="status-badge pending">Pending</span>
+                  <span style="background: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Pending</span>
                 {% else %}
-                  <span class="status-badge cancelled">Cancelled</span>
+                  <span style="background: #fee2e2; color: #991b1b; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Cancelled</span>
                 {% endif %}
               </td>
             </tr>
             {% endfor %}
+            {% if not recent_bookings %}
+            <tr>
+              <td colspan="6" style="padding: 20px; text-align: center; color: #9ca3af;">No recent bookings</td>
+            </tr>
+            {% endif %}
           </tbody>
         </table>
       </div>
@@ -145,63 +159,100 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-  const monthlyCtx = document.getElementById("monthlyChart").getContext("2d");
-  new Chart(monthlyCtx, {
-    type: "bar",
-    data: {
-      labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-      datasets: [{
-        label: "Bookings",
-        data: [45, 52, 60, 58, 75, 85],
-        backgroundColor: "#3b82f6",
-        borderRadius: 4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      indexAxis: 'x',
-      plugins: {
-        legend: { display: false }
-      },
-      scales: {
-        y: { beginAtZero: true, max: 100, ticks: { font: { size: 11 } } },
-        x: { ticks: { font: { size: 11 } } }
-      }
+  // Wait for DOM to be ready
+  setTimeout(function() {
+    // Monthly Bookings Chart
+    const monthlyCtx = document.getElementById("monthlyChart");
+    if (monthlyCtx) {
+      // Get data from Django template
+      const monthlyData = {{ monthly_bookings|safe }};
+      const maxMonthly = Math.max(...monthlyData, 100);
+      
+      new Chart(monthlyCtx, {
+        type: "bar",
+        data: {
+          labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+          datasets: [{
+            label: "Bookings",
+            data: monthlyData,
+            backgroundColor: "#3b82f6",
+            borderColor: "#2563eb",
+            borderWidth: 0,
+            borderRadius: 6,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: { 
+              beginAtZero: true, 
+              max: Math.ceil(maxMonthly * 1.1),
+              grid: { color: "#f3f4f6" },
+              ticks: { font: { size: 12 }, color: "#6b7280" } 
+            },
+            x: { 
+              grid: { display: false },
+              ticks: { font: { size: 12 }, color: "#6b7280" } 
+            }
+          }
+        }
+      });
     }
-  });
 
-  const revenueCtx = document.getElementById("revenueChart").getContext("2d");
-  new Chart(revenueCtx, {
-    type: "line",
-    data: {
-      labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-      datasets: [{
-        label: "Revenue",
-        data: [12000, 13500, 15200, 14800, 17600, 20000],
-        borderColor: "#06b6d4",
-        backgroundColor: "rgba(6, 182, 212, 0.05)",
-        tension: 0.4,
-        borderWidth: 2,
-        fill: true,
-        pointRadius: 4,
-        pointBackgroundColor: "#06b6d4"
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false }
-      },
-      scales: {
-        y: { beginAtZero: true, ticks: { font: { size: 11 } } },
-        x: { ticks: { font: { size: 11 } } }
-      }
+    // Revenue Trend Chart
+    const revenueCtx = document.getElementById("revenueChart");
+    if (revenueCtx) {
+      // Get data from Django template
+      const revenueData = {{ revenue_trend|safe }};
+      const maxRevenue = Math.max(...revenueData, 20000);
+      
+      new Chart(revenueCtx, {
+        type: "line",
+        data: {
+          labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+          datasets: [{
+            label: "Revenue",
+            data: revenueData,
+            borderColor: "#06b6d4",
+            backgroundColor: "rgba(6, 182, 212, 0.08)",
+            tension: 0.4,
+            borderWidth: 3,
+            fill: true,
+            pointRadius: 5,
+            pointBackgroundColor: "#06b6d4",
+            pointBorderColor: "#fff",
+            pointBorderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: { 
+              beginAtZero: true,
+              max: Math.ceil(maxRevenue * 1.1),
+              grid: { color: "#f3f4f6" },
+              ticks: { font: { size: 12 }, color: "#6b7280", callback: function(value) { return '$' + value.toLocaleString(); } } 
+            },
+            x: { 
+              grid: { display: false },
+              ticks: { font: { size: 12 }, color: "#6b7280" } 
+            }
+          }
+        }
+      });
     }
-  });
+  }, 100);
 </script>
 
 {% endblock %}

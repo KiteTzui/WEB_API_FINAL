@@ -4,12 +4,37 @@
 {% block content %}
 
 <div class="container my-5">
+  {% if booking_success %}
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <h4 class="alert-heading">Booking Confirmed!</h4>
+    <p>Your booking has been submitted successfully. The admin team will review and confirm your booking shortly. You will receive a confirmation email at <strong>{{ request.POST.email }}</strong></p>
+    <hr>
+    <p class="mb-0">Booking Reference: <strong>#{{ request.POST.room }}</strong></p>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  <div class="text-center mb-4">
+    <a href="{% url 'rooms' %}" class="btn btn-primary">Browse More Rooms</a>
+    <a href="{% url 'index' %}" class="btn btn-secondary">Back to Home</a>
+  </div>
+  {% endif %}
+
+  {% if booking_error %}
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <h4 class="alert-heading">❌ Booking Error</h4>
+    <p>{{ booking_error }}</p>
+    <hr>
+    <p class="mb-0"><small>Please review the form and try again. If the problem persists, please contact support.</small></p>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endif %}
+
+  {% if not booking_success %}
   <div class="row g-5">
     <!-- Booking Form (Left) -->
     <div class="col-lg-7">
       <h2 class="mb-4">Complete Your Booking</h2>
 
-      <form method="post" action="" class="needs-validation" novalidate>
+      <form method="post" action="{% url 'booking' %}" class="needs-validation" novalidate>
         {% csrf_token %}
 
         <!-- Guest Information -->
@@ -53,7 +78,7 @@
               <select name="room" class="form-select" id="roomSelect" required>
                 <option value="">Choose a room...</option>
                 {% for room in rooms %}
-                  <option value="{{ room.id }}" data-price="{{ room.price }}">
+                  <option value="{{ room.id }}" data-price="{{ room.price }}" {% if selected_room_id == room.id|stringformat:"s" or selected_room_id|stringformat:"s" == room.id|stringformat:"s" %}selected{% endif %}>
                     {{ room.title }} - ${{ room.price }}/night
                   </option>
                 {% endfor %}
@@ -213,6 +238,11 @@ document.addEventListener("DOMContentLoaded", function () {
   checkinInput.addEventListener("change", updateSummary);
   checkoutInput.addEventListener("change", updateSummary);
 
+  // Update summary on page load if room is pre-selected
+  if (roomSelect.value) {
+    updateSummary();
+  }
+
   // Form validation
   const form = document.querySelector("form");
   form.addEventListener("submit", function (event) {
@@ -224,4 +254,5 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 </script>
+  {% endif %}
 {% endblock %}

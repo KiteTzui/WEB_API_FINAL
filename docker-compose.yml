@@ -1,29 +1,35 @@
-version: '3'
+version: '3.8'
 
 services:
 
   django_frontend:
-    build: ./django_frontend
+    build:
+      context: ./django_frontend
+      dockerfile: Dockerfile
     container_name: staycation_frontend
     ports:
       - "8000:8000"
+    environment:
+      - FASTAPI_URL=http://fastapi_api:8001
     depends_on:
       - fastapi_api
+    volumes:
+      - ./django_frontend:/app
 
   fastapi_api:
-    build: ./fastapi_api
+    build:
+      context: ./fastapi_api
+      dockerfile: Dockerfile
     container_name: staycation_api
     ports:
       - "8001:8001"
-    depends_on:
-      - database
-
-  database:
-    image: postgres
-    container_name: staycation_db
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin123
-      POSTGRES_DB: staycation
-    ports:
-      - "5432:5432"
+      - DATABASE_URL=sqlite+aiosqlite:///./staycation.db
+    volumes:
+      - ./fastapi_api:/app
+      - ./staycation.db:/app/staycation.db
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8001/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

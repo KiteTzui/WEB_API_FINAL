@@ -12,12 +12,17 @@
       <a href="{% url 'admin_dashboard' %}" class="nav-item"><span class="nav-icon">📊</span><span>Dashboard</span></a>
       <a href="{% url 'admin_rooms' %}" class="nav-item"><span class="nav-icon">🛏️</span><span>Rooms</span></a>
       <a href="{% url 'admin_bookings' %}" class="nav-item active"><span class="nav-icon">📅</span><span>Bookings</span></a>
-      <a href="#" class="nav-item"><span class="nav-icon">👥</span><span>Users</span></a>
-      <a href="#" class="nav-item"><span class="nav-icon">📈</span><span>Analytics</span></a>
-      <a href="#" class="nav-item"><span class="nav-icon">⚙️</span><span>Settings</span></a>
+      <a href="{% url 'admin_users' %}" class="nav-item"><span class="nav-icon">👥</span><span>Users</span></a>
+      <a href="{% url 'admin_settings' %}" class="nav-item"><span class="nav-icon">⚙️</span><span>Settings</span></a>
     </nav>
   </div>
   <div class="admin-main">
+    {% if pending_bookings > 0 %}
+    <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 16px; border-radius: 4px; margin-bottom: 24px;">
+      <strong style="color: #856404;">⚠️ New Booking Notifications</strong>
+      <p style="color: #856404; margin: 8px 0 0 0; font-size: 14px;">You have <strong>{{ pending_bookings }}</strong> pending booking(s) awaiting confirmation.</p>
+    </div>
+    {% endif %}
     <div class="dashboard-header">
       <h1>Booking Management</h1>
       <p>View and manage all guest bookings</p>
@@ -27,34 +32,42 @@
         <div class="stat-icon" style="background: #e8f3ff; color: #2563eb;">📅</div>
         <div class="stat-info">
           <div class="stat-label">Total Bookings</div>
-          <div class="stat-value">156</div>
-          <div class="stat-change">This month</div>
+          <div class="stat-value">{{ total_bookings }}</div>
+          <div class="stat-change">All bookings</div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-icon" style="background: #f0fdf4; color: #16a34a;">✓</div>
         <div class="stat-info">
           <div class="stat-label">Confirmed</div>
-          <div class="stat-value">142</div>
-          <div class="stat-change">91% success rate</div>
+          <div class="stat-value">{{ confirmed_bookings }}</div>
+          <div class="stat-change">{% if total_bookings > 0 %}{{ confirmed_bookings|add:0|add:0 }}{% else %}0{% endif %}% success rate</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #fef3c7; color: #f59e0b;">⏳</div>
+        <div class="stat-info">
+          <div class="stat-label">Pending</div>
+          <div class="stat-value">{{ pending_bookings }}</div>
+          <div class="stat-change">Awaiting confirmation</div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-icon" style="background: #fef3c7; color: #f59e0b;">$</div>
         <div class="stat-info">
           <div class="stat-label">Revenue</div>
-          <div class="stat-value">$23,450</div>
-          <div class="stat-change">↑ 12% from last month</div>
+          <div class="stat-value">${{ total_revenue|floatformat:0 }}</div>
+          <div class="stat-change">Total earnings</div>
         </div>
       </div>
     </div>
     <div style="display: flex; gap: 12px; margin-bottom: 24px;">
-      <input type="text" placeholder="Search bookings..." style="flex: 1; padding: 11px 14px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 13px; background: #f9fafb; transition: all 0.2s ease;">
-      <select style="padding: 11px 14px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 13px; min-width: 140px; background: #f9fafb; transition: all 0.2s ease; cursor: pointer;">
-        <option>All Status</option>
-        <option>Confirmed</option>
-        <option>Pending</option>
-        <option>Cancelled</option>
+      <input type="text" id="searchInput" placeholder="Search bookings..." style="flex: 1; padding: 11px 14px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 13px; background: #f9fafb; transition: all 0.2s ease;">
+      <select id="statusFilter" style="padding: 11px 14px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 13px; min-width: 140px; background: #f9fafb; transition: all 0.2s ease; cursor: pointer;">
+        <option value="">All Status</option>
+        <option value="Confirmed">Confirmed</option>
+        <option value="Pending">Pending</option>
+        <option value="Cancelled">Cancelled</option>
       </select>
     </div>
     <div class="table-card">
@@ -85,7 +98,7 @@
               <td>{{ booking.nights }}</td>
               <td>${{ booking.total }}</td>
               <td>{% if booking.status == "Confirmed" %}<span class="status-badge confirmed">Confirmed</span>{% elif booking.status == "Pending" %}<span class="status-badge pending">Pending</span>{% else %}<span class="status-badge cancelled">Cancelled</span>{% endif %}</td>
-              <td><button class="btn-sm edit">View</button><button class="btn-sm delete">Delete</button></td>
+              <td><button class="btn-sm edit" onclick="viewBooking({{ booking.id }})">View</button></td>
             </tr>
             {% endfor %}
           </tbody>
@@ -94,5 +107,132 @@
     </div>
   </div>
 </div>
+
+<div id="viewBookingModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header"><h2>Booking Details</h2><button class="modal-close" onclick="closeViewBookingModal()">&times;</button></div>
+    <div class="modal-form" id="bookingDetailsContent" style="padding: 24px;">
+      <!-- Details populated by JS -->
+    </div>
+    <div class="form-actions" style="padding: 24px; border-top: 1px solid #e5e7eb;">
+      <button type="button" class="btn-secondary" onclick="closeViewBookingModal()">Close</button>
+      <button type="button" class="btn-primary" onclick="updateBookingStatus(document.getElementById('statusSelect').value)">Save Status</button>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
+{% block scripts %}
+<script>
+// FastAPI base URL
+let API_BASE = '{{ fastapi_url|default:"http://127.0.0.1:8001" }}';
+if(API_BASE.includes('fastapi_api')) API_BASE = API_BASE.replace('fastapi_api', window.location.hostname);
+if(API_BASE.startsWith('http://127.0.0.1')) API_BASE = API_BASE.replace('127.0.0.1', window.location.hostname);
+
+let currentBookingId = null;
+
+function closeViewBookingModal(){
+  document.getElementById('viewBookingModal').style.display = 'none';
+}
+
+function viewBooking(id){
+  fetch(`${API_BASE}/api/bookings/${id}`)
+    .then(r => { if(!r.ok) throw new Error('not found'); return r.json(); })
+    .then(booking => {
+      currentBookingId = booking.id;
+      const html = `
+        <div style="line-height: 1.8;">
+          <p><strong>Booking ID:</strong> #${booking.id}</p>
+          <p><strong>Guest Name:</strong> ${booking.guest_name || 'N/A'}</p>
+          <p><strong>Room:</strong> ${booking.room || 'N/A'}</p>
+          <p><strong>Check-in:</strong> ${booking.checkin || 'N/A'}</p>
+          <p><strong>Check-out:</strong> ${booking.checkout || 'N/A'}</p>
+          <p><strong>Nights:</strong> ${booking.nights || 'N/A'}</p>
+          <p><strong>Total Amount:</strong> $${booking.total || '0'}</p>
+          <p><strong>Status:</strong> 
+            <select id="statusSelect" style="padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer;">
+              <option value="Confirmed" ${booking.status === 'Confirmed' ? 'selected' : ''}>Confirmed</option>
+              <option value="Pending" ${booking.status === 'Pending' ? 'selected' : ''}>Pending</option>
+              <option value="Cancelled" ${booking.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+            </select>
+          </p>
+        </div>
+      `;
+      document.getElementById('bookingDetailsContent').innerHTML = html;
+      document.getElementById('viewBookingModal').style.display = 'block';
+    })
+    .catch(err => { alert('Failed to load booking details'); console.error(err); });
+}
+
+async function updateBookingStatus(newStatus){
+  if(!currentBookingId) return;
+  try{
+    // First fetch the full booking to get all fields
+    const fetchRes = await fetch(`${API_BASE}/api/bookings/${currentBookingId}`);
+    if(!fetchRes.ok) throw new Error('Failed to fetch booking');
+    const booking = await fetchRes.json();
+    
+    // Update only the status, keep other fields intact
+    const payload = {
+      guest_name: booking.guest_name,
+      room: booking.room,
+      checkin: booking.checkin,
+      checkout: booking.checkout,
+      status: newStatus,
+      nights: booking.nights,
+      total: booking.total
+    };
+    
+    const res = await fetch(`${API_BASE}/api/bookings/${currentBookingId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok){ const text = await res.text(); throw new Error(text || res.status); }
+    alert(`Booking status updated to ${newStatus}`);
+    closeViewBookingModal();
+    location.reload();
+  }catch(err){ alert('Failed to update status: ' + err.message); console.error(err); }
+}
+
+// Close modal when clicking background
+window.onclick = function(e){
+  const modal = document.getElementById('viewBookingModal');
+  if(e.target === modal) modal.style.display = 'none';
+}
+
+// Search and filter functionality
+function filterBookings(){
+  const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+  const statusFilter = document.getElementById('statusFilter').value;
+  const rows = document.querySelectorAll('.bookings-table tbody tr');
+  
+  rows.forEach(row => {
+    let show = true;
+    
+    // Search filter: check guest name and booking ID
+    if(searchTerm){
+      const guestName = row.cells[1]?.textContent.toLowerCase() || '';
+      const bookingId = row.cells[0]?.textContent.toLowerCase() || '';
+      show = guestName.includes(searchTerm) || bookingId.includes(searchTerm);
+    }
+    
+    // Status filter
+    if(show && statusFilter){
+      const statusCell = row.cells[7]?.textContent.trim() || '';
+      show = statusCell.includes(statusFilter);
+    }
+    
+    row.style.display = show ? '' : 'none';
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  const searchInput = document.getElementById('searchInput');
+  const statusFilter = document.getElementById('statusFilter');
+  
+  if(searchInput) searchInput.addEventListener('keyup', filterBookings);
+  if(statusFilter) statusFilter.addEventListener('change', filterBookings);
+});
+</script>
+{% endblock %}

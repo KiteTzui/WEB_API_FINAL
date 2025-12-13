@@ -12,15 +12,15 @@
       <a href="{% url 'admin_dashboard' %}" class="nav-item"><span class="nav-icon">📊</span><span>Dashboard</span></a>
       <a href="{% url 'admin_rooms' %}" class="nav-item active"><span class="nav-icon">🛏️</span><span>Rooms</span></a>
       <a href="{% url 'admin_bookings' %}" class="nav-item"><span class="nav-icon">📅</span><span>Bookings</span></a>
-      <a href="#" class="nav-item"><span class="nav-icon">👥</span><span>Users</span></a>
-      <a href="#" class="nav-item"><span class="nav-icon">📈</span><span>Analytics</span></a>
-      <a href="#" class="nav-item"><span class="nav-icon">⚙️</span><span>Settings</span></a>
+      <a href="{% url 'admin_users' %}" class="nav-item"><span class="nav-icon">👥</span><span>Users</span></a>
+
+      <a href="{% url 'admin_settings' %}" class="nav-item"><span class="nav-icon">⚙️</span><span>Settings</span></a>
     </nav>
   </div>
   <div class="admin-main">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
       <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #1a2332;">Room Management</h1>
-      <button class="btn-primary" onclick="openAddRoomModal()">+ Add New Room</button>
+      <button id="addRoomBtn" class="btn-primary">+ Add New Room</button>
     </div>
     <div class="stats-row">
       <div class="stat-card">
@@ -64,13 +64,16 @@
           </thead>
           <tbody>
             {% for room in rooms %}
-            <tr>
+            <tr id="room-row-{{ room.id }}">
               <td>#{{ room.id }}01</td>
               <td>{{ room.title }}</td>
               <td>{{ room.type }}</td>
               <td>${{ room.price }}</td>
               <td>{% if room.status == "Available" %}<span class="status-badge available">Available</span>{% else %}<span class="status-badge occupied">Occupied</span>{% endif %}</td>
-              <td><button class="btn-sm edit">Edit</button><button class="btn-sm delete">Delete</button></td>
+              <td>
+                <button class="btn-sm edit" onclick="openEditRoomModal({{ room.id }})">Edit</button>
+                <button class="btn-sm delete" onclick="deleteRoom({{ room.id }})">Delete</button>
+              </td>
             </tr>
             {% endfor %}
           </tbody>
@@ -79,10 +82,12 @@
     </div>
   </div>
 </div>
+
 <div id="addRoomModal" class="modal">
   <div class="modal-content">
     <div class="modal-header"><h2>Add New Room</h2><button class="modal-close" onclick="closeAddRoomModal()">&times;</button></div>
-    <form class="modal-form" onsubmit="submitRoom(event)">
+    <form id="roomForm" class="modal-form" onsubmit="submitRoom(event)">
+      <input type="hidden" name="room_id" id="room_id" value="">
       <div class="form-row">
         <div class="form-group"><label>Room Name</label><input type="text" name="title" placeholder="e.g., Deluxe Ocean Suite" required></div>
         <div class="form-group"><label>Room Type</label><select name="type" required><option value="">Select Type</option><option>Standard</option><option>Suite</option><option>Family</option></select></div>
@@ -98,16 +103,119 @@
       <div class="form-group"><label>Description</label><textarea name="description" rows="4" placeholder="Room description and amenities"></textarea></div>
       <div class="form-actions">
         <button type="button" class="btn-secondary" onclick="closeAddRoomModal()">Cancel</button>
-        <button type="submit" class="btn-primary">Add Room</button>
+        <button type="submit" class="btn-primary" id="roomSubmitBtn">Add Room</button>
       </div>
     </form>
   </div>
 </div>
+  {% endblock %}
+
+{% block scripts %}
 <script>
-function openAddRoomModal() { document.getElementById('addRoomModal').style.display = 'block'; }
-function closeAddRoomModal() { document.getElementById('addRoomModal').style.display = 'none'; }
-function submitRoom(e) { e.preventDefault(); alert('Room added!'); closeAddRoomModal(); }
-window.onclick = function(e) { const modal = document.getElementById('addRoomModal'); if(e.target === modal) modal.style.display = 'none'; }
+// FastAPI base URL (default to localhost for dev)
+// If running via docker-compose the server-side FASTAPI_URL may be 'http://fastapi_api:8001'.
+// The browser can't resolve 'fastapi_api', so replace it with the page host when needed.
+let API_BASE = '{{ fastapi_url|default:"http://127.0.0.1:8001" }}';
+if(API_BASE.includes('fastapi_api')){
+  API_BASE = API_BASE.replace('fastapi_api', window.location.hostname);
+}
+// ensure protocol/host sanity when running on host machine
+if(API_BASE.startsWith('http://127.0.0.1')){
+  API_BASE = API_BASE.replace('127.0.0.1', window.location.hostname);
+}
+
+// Small debug helper to confirm script loaded
+console.log('admin_rooms script loaded, API_BASE=', API_BASE);
+
+function openAddRoomModal(){
+  document.getElementById('roomForm').reset();
+  document.getElementById('room_id').value = '';
+  document.getElementById('roomSubmitBtn').textContent = 'Add Room';
+  document.getElementById('addRoomModal').style.display = 'block';
+}
+
+function openEditRoomModal(id){
+  // fetch room data from FastAPI and populate form
+  fetch(`${API_BASE}/api/rooms/${id}`)
+    .then(r => { if(!r.ok) throw new Error('not found'); return r.json() })
+    .then(room => {
+      const form = document.getElementById('roomForm');
+      form.title.value = room.title || '';
+      form.type.value = room.type || '';
+      form.price.value = room.price || '';
+      form.capacity.value = room.capacity || '';
+      form.status.value = room.status || 'Available';
+      form.image_url.value = room.image_url || '';
+      form.description.value = room.description || '';
+      document.getElementById('room_id').value = room.id;
+      document.getElementById('roomSubmitBtn').textContent = 'Save Changes';
+      document.getElementById('addRoomModal').style.display = 'block';
+    })
+    .catch(err => { alert('Failed to load room data'); console.error(err); });
+}
+
+function closeAddRoomModal(){ document.getElementById('addRoomModal').style.display = 'none'; }
+
+async function submitRoom(e){
+  e.preventDefault();
+  const form = document.getElementById('roomForm');
+  const id = document.getElementById('room_id').value;
+  const payload = {
+    title: form.title.value,
+    type: form.type.value,
+    price: parseFloat(form.price.value) || 0,
+    capacity: parseInt(form.capacity.value) || 0,
+    image_url: form.image_url.value || '',
+    status: form.status.value || 'Available',
+    description: form.description.value || ''
+  };
+
+  try{
+    let res;
+    if(id){
+      // Edit existing room via FastAPI
+      res = await fetch(`${API_BASE}/api/rooms/${id}`, {method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+    } else {
+      // Create new room via FastAPI
+      res = await fetch(`${API_BASE}/api/rooms/`, {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+    }
+    if(!res.ok){ const text = await res.text(); throw new Error(text || res.status); }
+    // success — reload to show changes
+    location.reload();
+  }catch(err){
+    alert('Failed to save room: ' + err.message);
+    console.error(err);
+  }
+}
+
+async function deleteRoom(id){
+  if(!confirm('Delete this room?')) return;
+  try{
+    const res = await fetch(`${API_BASE}/api/rooms/${id}`, {method: 'DELETE'});
+    if(!res.ok){ const text = await res.text(); throw new Error(text || res.status); }
+    // remove row from DOM if present
+    const row = document.getElementById('room-row-' + id);
+    if(row) row.remove();
+  }catch(err){ alert('Failed to delete room'); console.error(err); }
+}
+
+// Close modal when clicking on the modal background
+window.onclick = function(e){ 
+  const modal = document.getElementById('addRoomModal'); 
+  if(e.target === modal) modal.style.display = 'none'; 
+}
+
+// Attach click handler to Add Room button - simple and reliable
+document.addEventListener('DOMContentLoaded', function(){
+  const addBtn = document.getElementById('addRoomBtn');
+  if(addBtn){
+    addBtn.addEventListener('click', function(e){
+      e.preventDefault();
+      console.log('addRoomBtn clicked');
+      openAddRoomModal();
+    });
+  }
+});
 </script>
 {% endblock %}
 

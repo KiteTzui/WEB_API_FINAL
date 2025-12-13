@@ -18,67 +18,71 @@
       <div class="card p-4 shadow-sm sticky-top" style="top: 20px;">
         <h5 class="mb-3">Filter Rooms</h5>
 
-        <!-- Price Range -->
-        <div class="mb-4">
-          <label class="form-label fw-bold">Price Range</label>
-          <form method="get" action="">
+        <form method="get" action="" id="filterForm">
+          <!-- Price Range -->
+          <div class="mb-4">
+            <label class="form-label fw-bold">Price Range</label>
             <div class="input-group input-group-sm mb-2">
-              <input type="number" name="min_price" placeholder="Min" class="form-control" value="{{ request.GET.min_price|default:0 }}" />
+              <input type="number" name="min_price" placeholder="Min" class="form-control" value="{{ min_price|default:0 }}" min="0" />
               <span class="input-group-text">-</span>
-              <input type="number" name="max_price" placeholder="Max" class="form-control" value="{{ request.GET.max_price|default:500 }}" />
+              <input type="number" name="max_price" placeholder="Max" class="form-control" value="{{ max_price|default:1000 }}" min="0" />
             </div>
-            <button type="submit" class="btn btn-primary btn-sm w-100 mt-2">Apply Filters</button>
-          </form>
-        </div>
+            <small class="text-muted d-block">Min: $0 - Max: $1000</small>
+          </div>
 
-        <hr />
+          <hr />
 
-        <!-- Capacity -->
-        <div class="mb-4">
-          <label class="form-label fw-bold">Capacity</label>
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="cap1" />
-            <label class="form-check-label" for="cap1">1 Guest</label>
+          <!-- Capacity -->
+          <div class="mb-4">
+            <label class="form-label fw-bold">Capacity</label>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="capacity" id="capAll" value="" {% if not capacity %}checked{% endif %} />
+              <label class="form-check-label" for="capAll">All Capacities</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="capacity" id="cap1" value="1" {% if capacity == "1" %}checked{% endif %} />
+              <label class="form-check-label" for="cap1">1+ Guest</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="capacity" id="cap2" value="2" {% if capacity == "2" %}checked{% endif %} />
+              <label class="form-check-label" for="cap2">2+ Guests</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="capacity" id="cap4" value="4" {% if capacity == "4" %}checked{% endif %} />
+              <label class="form-check-label" for="cap4">4+ Guests</label>
+            </div>
           </div>
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="cap2" />
-            <label class="form-check-label" for="cap2">2 Guests</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="cap4" />
-            <label class="form-check-label" for="cap4">4 Guests</label>
-          </div>
-        </div>
 
-        <hr />
+          <hr />
 
-        <!-- Amenities Checklist -->
-        <div class="mb-4">
-          <label class="form-label fw-bold">Amenities</label>
-          <div class="form-check form-check-sm">
-            <input class="form-check-input" type="checkbox" id="wifi" />
-            <label class="form-check-label" for="wifi">Free WiFi</label>
+          <!-- Amenities Checklist -->
+          <div class="mb-4">
+            <label class="form-label fw-bold">Amenities</label>
+            <div class="form-check form-check-sm">
+              <input class="form-check-input" type="checkbox" name="amenities" id="wifi" value="wifi" {% if "wifi" in selected_amenities %}checked{% endif %} />
+              <label class="form-check-label" for="wifi">Free WiFi</label>
+            </div>
+            <div class="form-check form-check-sm">
+              <input class="form-check-input" type="checkbox" name="amenities" id="ac" value="air conditioning" {% if "air conditioning" in selected_amenities %}checked{% endif %} />
+              <label class="form-check-label" for="ac">Air Conditioning</label>
+            </div>
+            <div class="form-check form-check-sm">
+              <input class="form-check-input" type="checkbox" name="amenities" id="tv" value="tv" {% if "tv" in selected_amenities %}checked{% endif %} />
+              <label class="form-check-label" for="tv">TV</label>
+            </div>
+            <div class="form-check form-check-sm">
+              <input class="form-check-input" type="checkbox" name="amenities" id="mini" value="mini bar" {% if "mini bar" in selected_amenities %}checked{% endif %} />
+              <label class="form-check-label" for="mini">Mini Bar</label>
+            </div>
+            <div class="form-check form-check-sm">
+              <input class="form-check-input" type="checkbox" name="amenities" id="balcony" value="balcony" {% if "balcony" in selected_amenities %}checked{% endif %} />
+              <label class="form-check-label" for="balcony">Balcony</label>
+            </div>
           </div>
-          <div class="form-check form-check-sm">
-            <input class="form-check-input" type="checkbox" id="ac" />
-            <label class="form-check-label" for="ac">Air Conditioning</label>
-          </div>
-          <div class="form-check form-check-sm">
-            <input class="form-check-input" type="checkbox" id="tv" />
-            <label class="form-check-label" for="tv">TV</label>
-          </div>
-          <div class="form-check form-check-sm">
-            <input class="form-check-input" type="checkbox" id="mini" />
-            <label class="form-check-label" for="mini">Mini Bar</label>
-          </div>
-          <div class="form-check form-check-sm">
-            <input class="form-check-input" type="checkbox" id="balcony" />
-            <label class="form-check-label" for="balcony">Balcony</label>
-          </div>
-        </div>
 
-        <button class="btn btn-outline-primary w-100 btn-sm mb-2">Apply Filters</button>
-        <button class="btn btn-link btn-sm w-100 text-muted">Clear All</button>
+          <button type="submit" class="btn btn-primary w-100 btn-sm mb-2">Apply Filters</button>
+          <a href="{% url 'rooms' %}" class="btn btn-link btn-sm w-100 text-muted">Clear All</a>
+        </form>
       </div>
     </div>
 
@@ -119,7 +123,10 @@
                   </div>
                   <div class="d-flex justify-content-between align-items-center">
                     <div class="text-primary fw-bold">${{ room.price }}<small class="text-muted">/night</small></div>
-                    <a href="{% url 'room_details' room.id %}" class="btn btn-outline-primary btn-sm">View Details</a>
+                    <div class="d-flex gap-2">
+                      <a href="{% url 'room_details' room.id %}" class="btn btn-outline-primary btn-sm">View</a>
+                      <a href="{% url 'booking' %}?room={{ room.id }}" class="btn btn-primary btn-sm">Book</a>
+                    </div>
                   </div>
                 </div>
               </div>

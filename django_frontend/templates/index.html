@@ -34,9 +34,12 @@
           <div class="card-body d-flex flex-column">
             <h5 class="card-title">{{ room.title }}</h5>
             <p class="card-text text-muted small">{{ room.description }}</p>
-            <div class="mt-auto d-flex justify-content-between align-items-center">
+            <div class="mt-auto d-flex justify-content-between align-items-center gap-2">
               <div class="text-primary fw-bold">${{ room.price }}<small class="text-muted">/night</small></div>
-              <a href="{% url 'room_details' room.id %}" class="btn btn-outline-primary btn-sm">View Details</a>
+              <div class="d-flex gap-2">
+                <a href="{% url 'room_details' room.id %}" class="btn btn-outline-primary btn-sm">View</a>
+                <a href="{% url 'booking' %}?room={{ room.id }}" class="btn btn-primary btn-sm">Book</a>
+              </div>
             </div>
           </div>
         </div>
@@ -73,4 +76,32 @@
     </div>
   </div>
 </section>
+ 
+<!-- Products from FastAPI -->
+{% if products %}
+<section class="py-5 bg-white">
+  <div class="container">
+    <div class="text-center mb-4">
+      <h2 class="mb-1">Products</h2>
+      <p class="text-muted small">Items loaded from the FastAPI service</p>
+    </div>
+
+    <div class="row g-4">
+      {% for p in products %}
+      <div class="col-sm-6 col-lg-4">
+        <div class="card h-100 shadow-sm">
+          <div class="card-body d-flex flex-column">
+            <h5 class="card-title">{{ p.name }}</h5>
+            <p class="card-text text-muted small">{{ p.description }}</p>
+            <div class="mt-auto d-flex justify-content-between align-items-center">
+              <div class="text-primary fw-bold">${{ p.price }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
 {% endblock %}

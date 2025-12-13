@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block body_class %}admin-no-scroll{% endblock %}
+{% load static %}
+{% block title %}User Management{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+<div class="admin-wrapper">
+  <div class="admin-sidebar">
+    <div class="sidebar-header">Admin</div>
+    <nav class="sidebar-nav">
+      <a href="{% url 'admin_dashboard' %}" class="nav-item"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+      <a href="{% url 'admin_rooms' %}" class="nav-item"><span class="nav-icon">🛏️</span><span>Rooms</span></a>
+      <a href="{% url 'admin_bookings' %}" class="nav-item"><span class="nav-icon">📅</span><span>Bookings</span></a>
+      <a href="{% url 'admin_users' %}" class="nav-item active"><span class="nav-icon">👥</span><span>Users</span></a>
+      <a href="{% url 'admin_settings' %}" class="nav-item"><span class="nav-icon">⚙️</span><span>Settings</span></a>
+    </nav>
+  </div>
+  <div class="admin-main">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+      <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #1a2332;">User Management</h1>
+      <button id="addUserBtn" class="btn-primary">+ Add New User</button>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #e8f3ff; color: #2563eb;">👥</div>
+        <div class="stat-info">
+          <div class="stat-label">Total Users</div>
+          <div class="stat-value">{{ total_users }}</div>
+          <div class="stat-change">All registered users</div>
+        </div>
+      </div>
+    </div>
+    <div class="table-card">
+      <div class="table-header"><h4>All Users</h4></div>
+      <div class="table-scroll">
+        <table class="bookings-table">
+          <thead>
+            <tr>
+              <th>User ID</th>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Full Name</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in users %}
+            <tr id="user-row-{{ user.id }}">
+              <td>#{{ user.id }}</td>
+              <td>{{ user.username }}</td>
+              <td>{{ user.email }}</td>
+              <td>{{ user.full_name }}</td>
+              <td>
+                <button class="btn-sm edit" onclick="viewUser({{ user.id }})">View</button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="addUserModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header"><h2 id="modalTitle">User Details</h2><button class="modal-close" onclick="closeUserModal()">&times;</button></div>
+    <div class="modal-form" id="userDetailsContent" style="padding: 24px;">
+      <!-- Details populated by JS -->
+    </div>
+    <div class="form-actions" style="padding: 24px; border-top: 1px solid #e5e7eb;">
+      <button type="button" class="btn-secondary" onclick="closeUserModal()">Close</button>
+      <button type="button" id="saveUserBtn" class="btn-primary" style="display:none;" onclick="saveUser()">Create User</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// FastAPI base URL
+let API_BASE = '{{ fastapi_url|default:"http://127.0.0.1:8001" }}';
+// Replace internal Docker hostname with current hostname for browser requests
+if(API_BASE && API_BASE.includes('fastapi_api')) {
+  API_BASE = API_BASE.replace('fastapi_api', window.location.hostname);
+} else if(!API_BASE || API_BASE === 'http://127.0.0.1:8001') {
+  API_BASE = `http://${window.location.hostname}:8001`;
+}
+
+let isAddingNewUser = false;
+
+function closeUserModal(){
+  document.getElementById('addUserModal').style.display = 'none';
+  isAddingNewUser = false;
+}
+
+function viewUser(id){
+  isAddingNewUser = false;
+  document.getElementById('modalTitle').textContent = 'User Details';
+  document.getElementById('saveUserBtn').style.display = 'none';
+  
+  fetch(`${API_BASE}/api/users/${id}`)
+    .then(r => { if(!r.ok) throw new Error('not found'); return r.json(); })
+    .then(user => {
+      const html = `
+        <div style="line-height: 1.8;">
+          <p><strong>User ID:</strong> #${user.id}</p>
+          <p><strong>Username:</strong> ${user.username || 'N/A'}</p>
+          <p><strong>Email:</strong> ${user.email || 'N/A'}</p>
+          <p><strong>Full Name:</strong> ${user.full_name || 'N/A'}</p>
+        </div>
+      `;
+      document.getElementById('userDetailsContent').innerHTML = html;
+      document.getElementById('addUserModal').style.display = 'block';
+    })
+    .catch(err => { alert('Failed to load user details'); console.error(err); });
+}
+
+function saveUser(){
+  const username = document.getElementById('username').value.trim();
+  const email = document getElementById('email').value.trim();
+  const fullName = document.getElementById('fullName').value.trim();
+  const password = document.getElementById('password').value.trim();
+  
+  if(!username || !email || !password) {
+    alert('Please fill in username, email, and password');
+    return;
+  }
+  
+  const userData = {
+    username: username,
+    email: email,
+    full_name: fullName,
+    password: password
+  };
+  
+  fetch(`${API_BASE}/api/users`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(userData)
+  })
+  .then(r => {
+    if(!r.ok) throw new Error('Failed to create user');
+    return r.json();
+  })
+  .then(user => {
+    alert(`User "${username}" created successfully!`);
+    closeUserModal();
+    location.reload();
+  })
+  .catch(err => { alert('Error creating user: ' + err.message); console.error(err); });
+}
+
+// Close modal when clicking background
+window.onclick = function(e){
+  const modal = document.getElementById('addUserModal');
+  if(e.target === modal) modal.style.display = 'none';
+}
+
+// Add user button handler
+document.addEventListener('DOMContentLoaded', function(){
+  const addBtn = document.getElementById('addUserBtn');
+  if(addBtn){
+    addBtn.addEventListener('click', function(e){
+      e.preventDefault();
+      isAddingNewUser = true;
+      document.getElementById('modalTitle').textContent = 'Create New User';
+      document.getElementById('saveUserBtn').style.display = 'inline-block';
+      
+      const html = `
+        <form style="display: flex; flex-direction: column; gap: 16px;">
+          <div>
+            <label for="username" style="display: block; margin-bottom: 6px; color: #374151; font-size: 14px; font-weight: 500;">Username</label>
+            <input type="text" id="username" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 14px; box-sizing: border-box;" placeholder="Enter username">
+          </div>
+          
+          <div>
+            <label for="email" style="display: block; margin-bottom: 6px; color: #374151; font-size: 14px; font-weight: 500;">Email</label>
+            <input type="email" id="email" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 14px; box-sizing: border-box;" placeholder="Enter email">
+          </div>
+          
+          <div>
+            <label for="fullName" style="display: block; margin-bottom: 6px; color: #374151; font-size: 14px; font-weight: 500;">Full Name</label>
+            <input type="text" id="fullName" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 14px; box-sizing: border-box;" placeholder="Enter full name">
+          </div>
+          
+          <div>
+            <label for="password" style="display: block; margin-bottom: 6px; color: #374151; font-size: 14px; font-weight: 500;">Password</label>
+            <input type="password" id="password" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 14px; box-sizing: border-box;" placeholder="Enter password">
+          </div>
+        </form>
+      `;
+      document.getElementById('userDetailsContent').innerHTML = html;
+      document.getElementById('addUserModal').style.display = 'block';
+    });
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,7 @@
+{
+  "booking_auto_confirm": false,
+  "notify_on_pending": true,
+  "currency": "USD",
+  "occupancy_alert_threshold": 80,
+  "items_per_page": 10
+}

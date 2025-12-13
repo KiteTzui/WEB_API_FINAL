@@ -1,6 +1,14 @@
 venv/
 __pycache__/
 *.pyc
-db/
+*.pyo
 *.sqlite3
+*.db
 .env
+.env.local
+.DS_Store
+*.bak_*
+build/
+dist/
+*.egg-info/
+.pytest_cache/

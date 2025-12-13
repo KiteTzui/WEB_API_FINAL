@@ -1,0 +1,50 @@
+{% extends 'admin_base.html' %}
+
+{% block admin_content %}
+<div style="padding:12px;">
+  <h2 style="margin:0 0 8px 0; font-size:18px;">System Settings</h2>
+  <p style="margin:0 0 12px 0; color:#6b7280; font-size:13px;">Configure core system options used by the admin and booking flow.</p>
+
+  {% if success %}
+    <div style="background:#ecfdf5; border-left:4px solid #10b981; padding:8px 12px; margin-bottom:8px;">Settings saved.</div>
+  {% endif %}
+  {% if error %}
+    <div style="background:#fff1f2; border-left:4px solid #ef4444; padding:8px 12px; margin-bottom:8px;">Error: {{ error }}</div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; align-items:center;">
+      <label style="font-size:13px; color:#374151;">
+        <input type="checkbox" name="booking_auto_confirm" {% if settings.booking_auto_confirm %}checked{% endif %}> Auto-confirm bookings
+      </label>
+
+      <label style="font-size:13px; color:#374151;">
+        <input type="checkbox" name="notify_on_pending" {% if settings.notify_on_pending %}checked{% endif %}> Notify on pending bookings
+      </label>
+
+      <label style="font-size:13px; color:#374151;">
+        Currency
+        <input type="text" name="currency" value="{{ settings.currency }}" style="width:100%; padding:6px; margin-top:4px;" />
+      </label>
+
+      <label style="font-size:13px; color:#374151;">
+        Items per page
+        <input type="number" name="items_per_page" value="{{ settings.items_per_page }}" min="1" style="width:100%; padding:6px; margin-top:4px;" />
+      </label>
+
+      <label style="font-size:13px; color:#374151;">
+        Occupancy alert threshold (%)
+        <input type="number" name="occupancy_alert_threshold" value="{{ settings.occupancy_alert_threshold }}" min="1" max="100" style="width:100%; padding:6px; margin-top:4px;" />
+      </label>
+
+      <div></div>
+    </div>
+
+    <div style="margin-top:12px;">
+      <button class="btn btn-primary" type="submit" style="padding:.45rem .75rem;">Save Settings</button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}
